@@ -9,3 +9,14 @@ expects csv with header line that at least contains:
   - ObjectName
   - RA
   - DEC
+
+# installation
+
+Clone the repository
+
+    git clone https://github.com/joedurbak/aircalc
+
+Install the packages
+
+    conda install astropy numpy matplotlib pandas jinja2
+    conda install -c conda-forge astroplan

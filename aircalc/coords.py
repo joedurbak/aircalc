@@ -1,14 +1,10 @@
-import os
 import warnings
-import collections
 from datetime import timezone
 from datetime import datetime as dt
-from datetime import timedelta as td
 
 import pandas
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
-from astropy.coordinates import AltAz
 from astropy import units as u
 from astropy.utils.exceptions import AstropyDeprecationWarning
 from matplotlib import pyplot as plt
@@ -28,7 +24,7 @@ def observatory_loc():
         observatory_loc_dict = load_pickle(location_pickle)
         observer = observatory_loc_dict['observer']
     except FileNotFoundError:
-        observer = Observer.at_site(location_name)
+        observer = Observer.at_site(location_name, timezone=SETTINGS['TIMEZONE'])
         archive_time = dt.utcnow()
         observatory_loc_dict = {'archive_time': archive_time, 'observer': observer}
         save_pickle(observatory_loc_dict, location_pickle)
@@ -39,21 +35,8 @@ OBSERVER = observatory_loc()
 LOCATION = OBSERVER.location
 
 
-def radec_to_altaz(
-        ra, dec, unit,
-        observing_location=LOCATION,
-):
-    observing_time = Time(str(dt.utcnow()))
-    aa = AltAz(location=observing_location, obstime=observing_time)
-    coord = SkyCoord(ra, dec, unit=unit)
-    altaz_coord = coord.transform_to(aa)
-    alt = altaz_coord.alt.degree
-    az = altaz_coord.az.degree
-    return alt, az
-
-
-def plot_targets(targets, obstime):
-    for target in targets:
+def plot_targets(targets, obstime, file_prefix):
+    for target in set(targets):
         # sun_set_tonight = OBSERVER.sun_set_time(time=obstime)
         # sun_rise_tonight = OBSERVER.sun_rise_time(time=obstime)
         plot_airmass(target, OBSERVER, obstime)
@@ -65,18 +48,21 @@ def plot_targets(targets, obstime):
         _moon, OBSERVER, obstime, brightness_shading=True, style_kwargs=moon_style, altitude_yaxis=True
     )
     ax.legend()
-    plt.show()
+    plt.savefig(file_prefix+SETTINGS['AIRMASSPLOTSUFFIX'])
+    plt.clf()
 
     for target in targets:
         plot_sky(target, OBSERVER, obstime)
     ax2 = plot_sky(_moon, OBSERVER, obstime)
     ax2.legend()
-    plt.show()
+    plt.savefig(file_prefix + SETTINGS['SKYPLOTSUFFIX'])
+    plt.clf()
 
 
-def handle_target_list(target_list_df, plot=True):
+def handle_target_list(target_list_df, plot=True, file_prefix='air'):
     targets = []
     csv_dicts = []
+    radec = []
     obstime = Time(str(dt.utcnow()))
     horizon = SETTINGS['HORIZONRISEDEGREES'] * u.degree
     for name, ra, dec, block_id in zip(
@@ -100,9 +86,13 @@ def handle_target_list(target_list_df, plot=True):
         airmass = aa.secz
         csv_dicts.append({
             'BlockID': block_id, 'RA': ra, 'DEC': dec, 'ObjectName': name,
-            'AirMass': airmass, 'RiseTime': rise_time.iso, 'SetTime': set_time.iso,
+            'AirMass': airmass,
+            'RiseTimeLocal': rise_time.datetime.strftime("%H:%M"),
+            'SetTimeLocal': set_time.datetime.strftime("%H:%M")
         })
-        targets.append(target)
+        if (ra, dec) not in radec:
+            targets.append(target)
+            radec.append((ra, dec))
     if plot:
-        plot_targets(targets, obstime)
+        plot_targets(targets, obstime, file_prefix)
     return pandas.DataFrame(csv_dicts)

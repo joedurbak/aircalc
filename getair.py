@@ -1,6 +1,6 @@
 import argparse
 
-from aircalc.loader import load_csv, save_csv
+from aircalc.loader import load_csv, save_csv, save_html
 from aircalc.coords import handle_target_list
 
 
@@ -18,8 +18,9 @@ def main():
     observation_list = load_csv(args.observation_list_csv)
     output_filename = args.output_csv
     noplot = args.noplot
-    df = handle_target_list(observation_list, not noplot)
+    df = handle_target_list(observation_list, not noplot, output_filename)
     save_csv(df, output_filename)
+    save_html(df, output_filename)
 
 
 if __name__ == '__main__':

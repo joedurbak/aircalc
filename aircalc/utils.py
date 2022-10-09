@@ -5,11 +5,15 @@ from threading import Lock
 
 base_dir = os.path.split(__file__)[0]
 base_dir = os.path.split(base_dir)[0]
+html_template = os.path.join(base_dir, 'aircalc', 'template', 'aircalc.html')
 
 DEFAULT_SETTINGS = {
     'OBSERVATORY': 'Sutherland',
     "INPUTCSVFIELDS": ["BlockID", "ObjectName", "RA", "DEC"],
-    "HORIZONRISEDEGREES": 23
+    "HORIZONRISEDEGREES": 23,
+    "AIRMASSPLOTSUFFIX": '.airmass.png',
+    "SKYPLOTSUFFIX": '.skyplot.png',
+    "TIMEZONE": 'Africa/Johannesburg'
 }
 
 
